@@ -1,0 +1,37 @@
+name: rostersync
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    # Ride dates are local calendar dates for an India-based operation.
+    command: ["postgres", "-c", "timezone=Asia/Kolkata", "-c", "max_connections=200"]
+    environment:
+      POSTGRES_USER: rostersync
+      POSTGRES_PASSWORD: rostersync
+      POSTGRES_DB: rostersync
+    ports: ["55432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rostersync -d rostersync"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    # Under memory pressure only keys with a TTL (cache entries) are evicted, least recently used
+    # first; the event stream has no TTL and is never evicted. appendonly keeps it across restarts.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "volatile-lru"]
+    ports: ["56379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+  redisdata:
