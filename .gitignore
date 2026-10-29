@@ -1,0 +1,49 @@
+# Build output (rebuilt by `docker compose up --build`, mvn and npm)
+target/
+*.class
+*.jar
+web/dist/
+web/.vite/
+node_modules/
+coverage/
+
+# Generated demo and benchmark files
+demo/*.csv
+*.csv
+!backend/src/test/resources/**/*.csv
+bench-*.json
+k6-summary*.json
+
+# Secrets and local environment overrides (the demo values in docker-compose.yml are intentional)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and JVM crash files
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+npm-debug.log*
+
+# IDEs and editors (VS Code Java / Eclipse, IntelliJ)
+.vscode/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+out/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# AI assistant and personal notes
+.claude/
+CLAUDE.md
