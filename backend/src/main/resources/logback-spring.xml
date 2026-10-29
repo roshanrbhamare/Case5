@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Structured JSON logs. Code logs ids and counts only, never personal data. -->
+<configuration>
+  <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <customFields>{"service":"rostersync"}</customFields>
+      <fieldNames>
+        <timestamp>time</timestamp>
+        <message>msg</message>
+        <levelValue>[ignore]</levelValue>
+        <version>[ignore]</version>
+        <thread>[ignore]</thread>
+      </fieldNames>
+      <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+        <maxDepthPerThrowable>20</maxDepthPerThrowable>
+      </throwableConverter>
+    </encoder>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="JSON"/>
+  </root>
+</configuration>

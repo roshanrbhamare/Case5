@@ -1,0 +1,102 @@
+# One Spring Boot app: HTTP API on port 3000, plus the background loops (outbox relay,
+# booking consumer, nightly runner). Flyway migrates the database at startup.
+spring:
+  application:
+    name: rostersync
+  main:
+    banner-mode: off
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:55432/rostersync}
+    username: ${DATABASE_USER:rostersync}
+    password: ${DATABASE_PASSWORD:rostersync}
+    hikari:
+      pool-name: rostersync
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      data-source-properties:
+        # Constraint-violation details can echo row values (emails, phones): keep them out of exception messages and logs.
+        logServerErrorDetail: false
+  flyway:
+    enabled: true
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:56379/0}
+      # Fail fast: while disconnected, commands are rejected at once (see RedisConfig), so an
+      # outage turns into cache misses and a paused relay, not hung requests.
+      timeout: 2s
+      connect-timeout: 2s
+  web:
+    resources:
+      add-mappings: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  task:
+    scheduling:
+      pool:
+        size: 3
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+server:
+  port: ${PORT:3000}
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 15m
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: prometheus
+      path-mapping:
+        prometheus: metrics
+  metrics:
+    tags:
+      application: rostersync
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  health:
+    redis:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.apache.catalina: WARN
+    com.zaxxer.hikari: WARN
+
+rostersync:
+  worker:
+    # Run the background loops in this app (off in tests, which drive them directly).
+    enabled: ${WORKER_ENABLED:true}
+  # Fill an empty database with demo tenants, users and employees at startup.
+  seed-demo-data: ${SEED_DEMO_DATA:false}
+  jwt-secret: ${JWT_SECRET:dev-only-secret-change-me-please-32b}
+  jwt-ttl: ${JWT_TTL:8h}
+  cors-origins: ${CORS_ORIGIN:http://localhost:5173,http://localhost:8088}
+  # Share of active employees that may be missing from one nightly export before the run stops.
+  safety-brake-threshold: ${SAFETY_BRAKE_THRESHOLD:0.30}
+  reconcile:
+    bucket-group: ${RECONCILE_BUCKET_GROUP:8}
+    max-upload-mb: ${RECONCILE_MAX_UPLOAD_MB:200}
+    lease-seconds: ${RECONCILE_LEASE_SECONDS:120}
+    poll-ms: ${RECONCILE_POLL_MS:1000}
+  outbox:
+    batch-size: ${OUTBOX_BATCH_SIZE:100}
+    poll-ms: ${OUTBOX_POLL_MS:250}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
+  stream:
+    name: ${EVENT_STREAM:rostersync.employee-events}
+    max-length: ${EVENT_STREAM_MAXLEN:500000}
+    consumer-group: ${CONSUMER_GROUP:booking-deactivation}
+    reclaim-ms: ${CONSUMER_RECLAIM_MS:30000}
+  cache:
+    employee-ttl: ${CACHE_EMPLOYEE_TTL:60s}
+    offices-ttl: ${CACHE_OFFICES_TTL:300s}
+    api-key-ttl: ${CACHE_API_KEY_TTL:300s}
+  chaos:
+    # Failure injection for tests and demos. Ignored unless allowed (never in real deployments).
+    crash-at: ${CHAOS_CRASH_AT:}
+    allowed: ${ALLOW_CHAOS:false}
