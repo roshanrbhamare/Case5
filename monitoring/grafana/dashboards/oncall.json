@@ -1,0 +1,70 @@
+{
+  "uid": "rostersync-oncall",
+  "title": "RosterSync: on-call",
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Outbox lag (s)", "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "max(rostersync_outbox_lag_seconds)" }],
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 30 }, { "color": "red", "value": 120 }] } } }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Outbox queue depth", "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "max(rostersync_outbox_pending)" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Consumer backlog", "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "max(rostersync_consumer_pending)" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Safety brake trips (24h)", "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(increase(rostersync_safety_brake_trips_total[24h]))" }],
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "HR events by outcome (per second)", "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (outcome) (rate(rostersync_events_total[5m]))", "legendFormat": "{{outcome}}" }]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Rejections by code (per second)", "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (code) (rate(rostersync_rejections_total[5m]))", "legendFormat": "{{code}}" }]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Retries and publish failures", "gridPos": { "x": 0, "y": 13, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (operation) (rate(rostersync_retries_total[5m]))", "legendFormat": "retry {{operation}}" },
+        { "expr": "sum(rate(rostersync_outbox_publish_failures_total[5m]))", "legendFormat": "publish failures" }
+      ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "API latency p50 / p99", "gridPos": { "x": 12, "y": 13, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, sum by (le) (rate(http_server_requests_seconds_bucket[5m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(http_server_requests_seconds_bucket[5m])))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Nightly phase duration p95", "gridPos": { "x": 0, "y": 21, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, phase) (rate(rostersync_reconcile_phase_duration_seconds_bucket[1h])))", "legendFormat": "{{phase}}" }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Cache hit / miss / error", "gridPos": { "x": 12, "y": 21, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (cache, result) (rate(cache_gets_total[5m]))", "legendFormat": "{{cache}} {{result}}" }, { "expr": "sum by (cache, result) (rate(rostersync_cache_requests_total[5m]))", "legendFormat": "{{cache}} {{result}}" }]
+    }
+  ]
+}

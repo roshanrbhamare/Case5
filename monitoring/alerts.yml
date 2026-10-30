@@ -1,0 +1,44 @@
+groups:
+  - name: rostersync
+    rules:
+      - alert: NightlyExportBlocked
+        expr: increase(rostersync_safety_brake_trips_total[1h]) > 0
+        labels: { severity: page }
+        annotations:
+          summary: A nightly HR export tripped the safety brake and is waiting for an operator.
+          runbook: Open the Nightly file page, check the missing count with HR, then approve or reject.
+
+      - alert: OutboxLagHigh
+        expr: max(rostersync_outbox_lag_seconds) > 120
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: Change events are more than 2 minutes behind (event stream down or relay stuck).
+          runbook: Check Redis health and worker logs for "Event stream unavailable". Changes are safe in the outbox and will drain on recovery.
+
+      - alert: OutboxDeadLetters
+        expr: max(rostersync_outbox_dead) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: Some change events could not be published after retries.
+
+      - alert: RejectionRateHigh
+        expr: sum(rate(rostersync_events_total{outcome="rejected"}[15m])) / clamp_min(sum(rate(rostersync_events_total[15m])), 1) > 0.2
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: More than 20% of HR records are being rejected. Likely a schema or data change on the HR side.
+
+      - alert: ConsumerBacklog
+        expr: max(rostersync_consumer_pending) > 500
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: Exits are not being applied to bookings fast enough.
+
+      - alert: ApiErrorRate
+        expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count[5m])), 1) > 0.02
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: More than 2% of API requests are failing with 5xx.
