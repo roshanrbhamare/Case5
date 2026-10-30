@@ -1,0 +1,30 @@
+# Integration tests run against real Postgres and Redis (docker compose up -d postgres redis).
+# Inside the compose network set TEST_DB_URL / TEST_REDIS_URL to the service hostnames.
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:55432/rostersync_test}
+    username: rostersync
+    password: rostersync
+    hikari:
+      # Several cached test contexts (and crash-test child JVMs) share one Postgres: keep pools small.
+      maximum-pool-size: 12
+      minimum-idle: 1
+  data:
+    redis:
+      url: ${TEST_REDIS_URL:redis://localhost:56379/15}
+
+rostersync:
+  # Tests call the relay, consumer and nightly runner directly.
+  worker:
+    enabled: false
+  login-attempts-per-minute: 1000
+  jwt-secret: test-secret-test-secret-test-secret-32
+  cors-origins: http://localhost
+  stream:
+    name: test.employee-events
+    consumer-group: test-booking-deactivation
+
+logging:
+  level:
+    root: WARN
+    access: WARN
