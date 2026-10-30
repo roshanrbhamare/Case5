@@ -278,6 +278,10 @@ table.table { width: 100%; border-collapse: collapse; }
   background: var(--card); cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s;
 }
 .demo-account:hover { border-color: #bfe5b4; background: var(--green-50); }
+.login-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--line-2); border-radius: 12px; margin-bottom: 20px; }
+.login-modes button { border: 0; background: transparent; border-radius: 9px; padding: 8px 10px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.login-modes button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
+.code-input { letter-spacing: 0.4em; font-size: 20px; font-weight: 700; text-align: center; }
 
 .code { background: #0f1720; color: #d6e2ef; border-radius: 12px; padding: 14px 16px; overflow: auto; font-size: 12.5px; max-height: 320px; }
 

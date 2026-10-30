@@ -35,8 +35,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => setUnauthorizedHandler(logout), [logout]);
 
-  const login = useCallback(async (email, password) => {
-    const result = await api('/v1/auth/login', { method: 'POST', body: { email, password } });
+  const start = useCallback((result) => {
     setToken(result.token);
     setSession(result);
     try {
@@ -47,7 +46,16 @@ export function AuthProvider({ children }) {
     return result.user;
   }, []);
 
-  const value = useMemo(() => ({ user: session?.user ?? null, login, logout }), [session, login, logout]);
+  // Staff (operators, transport admins) sign in with a password.
+  const login = useCallback(async (email, password) => start(await api('/v1/auth/login', { method: 'POST', body: { email, password } })), [start]);
+
+  // Employees sign in with a one-time code sent to the email HR gave us.
+  const signInWithCode = useCallback(
+    async (email, code) => start(await api('/v1/auth/sign-in-code/verify', { method: 'POST', body: { email, code } })),
+    [start],
+  );
+
+  const value = useMemo(() => ({ user: session?.user ?? null, login, signInWithCode, logout }), [session, login, signInWithCode, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
