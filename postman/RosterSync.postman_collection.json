@@ -1,0 +1,536 @@
+{
+  "info": {
+    "name": "RosterSync",
+    "description": "HR roster sync API. Run 'Sign in' requests first; they store tokens in collection variables. All credentials are local demo values.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "hrApiKey",
+      "value": "acme-hr-dev-key"
+    },
+    {
+      "key": "operatorToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "employeeToken",
+      "value": ""
+    },
+    {
+      "key": "runId",
+      "value": ""
+    },
+    {
+      "key": "batchId",
+      "value": ""
+    },
+    {
+      "key": "transportVersion",
+      "value": "0"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sign in",
+      "item": [
+        {
+          "name": "Sign in as operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('operatorToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"operator@acme.test\", \"password\": \"Demo@1234\" }"
+            }
+          }
+        },
+        {
+          "name": "Sign in as transport admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('adminToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"admin@acme.test\", \"password\": \"Demo@1234\" }"
+            }
+          }
+        },
+        {
+          "name": "Sign in as employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('employeeToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"employee@acme.test\", \"password\": \"Demo@1234\" }"
+            }
+          }
+        },
+        {
+          "name": "Who am I (any signed-in user)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/auth/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Live HR feed (API key)",
+      "item": [
+        {
+          "name": "Out of order: v7 transfer, then v6 shift change",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('batchId', pm.response.json().batchId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/events",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{hrApiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"events\": [\n    { \"type\": \"CREATE\", \"employeeId\": \"P7001\", \"version\": 1, \"data\": { \"fullName\": \"Postman Person\", \"email\": \"p7001@acme.example\", \"phone\": \"+919800070001\", \"managerId\": null, \"officeCode\": \"BLR-WF\", \"shiftCode\": \"S0900\" } },\n    { \"type\": \"UPDATE\", \"employeeId\": \"P7001\", \"version\": 7, \"data\": { \"fullName\": \"Postman Person\", \"email\": \"p7001@acme.example\", \"phone\": \"+919800070001\", \"managerId\": null, \"officeCode\": \"PNQ-HJ\", \"shiftCode\": \"S1000\" } },\n    { \"type\": \"UPDATE\", \"employeeId\": \"P7001\", \"version\": 6, \"data\": { \"fullName\": \"Postman Person\", \"email\": \"p7001@acme.example\", \"phone\": \"+919800070001\", \"managerId\": null, \"officeCode\": \"BLR-WF\", \"shiftCode\": \"NIGHT\" } }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Batch with bad records",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('batchId', pm.response.json().batchId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/events",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{hrApiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"events\": [\n    { \"type\": \"CREATE\", \"employeeId\": \"P7002\", \"version\": 1, \"data\": { \"fullName\": \"Good Record\", \"email\": \"p7002@acme.example\", \"phone\": \"+919800070002\", \"officeCode\": \"BLR-WF\" } },\n    { \"type\": \"CREATE\", \"employeeId\": \"P7003\", \"version\": 1, \"data\": { \"fullName\": \"Bad Phone\", \"email\": \"p7003@acme.example\", \"phone\": \"12abc\", \"officeCode\": \"BLR-WF\" } },\n    { \"type\": \"CREATE\", \"employeeId\": \"P7004\", \"version\": 1, \"data\": { \"fullName\": \"Unknown Office\", \"email\": \"p7004@acme.example\", \"phone\": \"+919800070004\", \"officeCode\": \"MARS-01\" } }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Exit (deactivate)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/events",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{hrApiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"events\": [ { \"type\": \"DEACTIVATE\", \"employeeId\": \"E1004\", \"version\": 50 } ] }"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Nightly file",
+      "item": [
+        {
+          "name": "Upload export (choose a CSV file as the binary body)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('runId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/reconcile/runs",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/csv"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{hrApiKey}}"
+              }
+            ],
+            "body": {
+              "mode": "file",
+              "file": {
+                "src": ""
+              }
+            }
+          }
+        },
+        {
+          "name": "Get run",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/reconcile/runs/{{runId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "List runs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/reconcile/runs",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Approve blocked run (operator)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/reconcile/runs/{{runId}}/approve",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"note\": \"Confirmed with HR: business unit divested.\" }"
+            }
+          }
+        },
+        {
+          "name": "Reject blocked run (operator)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/reconcile/runs/{{runId}}/reject",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"note\": \"File cut off upstream; HR is resending.\" }"
+            }
+          }
+        },
+        {
+          "name": "Approve as admin (expect 403)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/reconcile/runs/{{runId}}/approve",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"note\": \"should be refused\" }"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Roster",
+      "item": [
+        {
+          "name": "List employees (admin)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/employees?status=ACTIVE&limit=20",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get employee (operator, masked)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('transportVersion', pm.response.json().transportVersion);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/employees/E1002",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update pickup point (admin, optimistic version; run 'Get employee' first)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/v1/employees/E1002/transport",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"version\": {{transportVersion}}, \"pickupPoint\": \"Gate 5, Brigade Gateway\" }"
+            }
+          }
+        },
+        {
+          "name": "Employee's upcoming rides (admin)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/employees/E1002/bookings",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Offices (admin)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/offices",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Other client's employee (expect 404)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/employees/G1001",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "My commute (employee)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employeeToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Operations",
+      "item": [
+        {
+          "name": "Ops summary",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/ops/summary",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Batches",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/batches",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Batch error report",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/batches/{{batchId}}/errors",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operatorToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health/live"
+          }
+        },
+        {
+          "name": "Readiness",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health/ready"
+          }
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/metrics"
+          }
+        }
+      ]
+    }
+  ]
+}
