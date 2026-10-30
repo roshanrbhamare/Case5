@@ -36,6 +36,10 @@
     {
       "key": "transportVersion",
       "value": "0"
+    },
+    {
+      "key": "signInCode",
+      "value": ""
     }
   ],
   "item": [
@@ -120,6 +124,60 @@
             "body": {
               "mode": "raw",
               "raw": "{ \"email\": \"employee@acme.test\", \"password\": \"Demo@1234\" }"
+            }
+          }
+        },
+        {
+          "name": "Employee: request a sign-in code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('signInCode', pm.response.json().demoCode || '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/auth/sign-in-code",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"aditya.gupta7@acme.example\" }"
+            }
+          }
+        },
+        {
+          "name": "Employee: sign in with the code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('employeeToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/auth/sign-in-code/verify",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"aditya.gupta7@acme.example\", \"code\": \"{{signInCode}}\" }"
             }
           }
         },

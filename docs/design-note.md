@@ -47,6 +47,7 @@ flowchart LR
 | `reconcile_staging` | Streamed file rows | COPY target, indexed by (run, bucket, id) |
 | `ingest_batches`, `ingest_errors` | Error reports | Codes and field names only, never values |
 | `trips`, `bookings` | Downstream side effects | Seat count checked `0 ≤ booked ≤ capacity` |
+| `sign_in_codes` | Employee one-time sign-in codes | HMAC of the code only; expiry, attempt count, single use. Employees need no login account |
 
 **Idempotency key** = `(tenant_id, employee_id, source_version)`. Versions are monotonic per employee, so `hr_version` is a high-water mark: incoming `>` stored means apply, `=` means duplicate (a no-op, flagged as a conflict if the content differs), `<` means stale (ignored). There is no unbounded "processed ids" table, and the check runs on the row we lock anyway.
 

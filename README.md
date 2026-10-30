@@ -7,7 +7,7 @@ Corporate clients push employee changes from their HR system: joins, transfers, 
 | | |
 | --- | --- |
 | **Stack** | **Java 21 · Spring Boot 3.3** (Web, JDBC, Security, Actuator, Cache, Data Redis) · PostgreSQL 16 · Flyway · Redis 7 (cache + Streams) · Micrometer + Prometheus + Grafana · React 18 + Vite · Docker Compose |
-| **Tests** | 104 automated tests (JUnit 5): domain unit tests, integration tests on real Postgres and Redis, concurrency tests, crash tests that kill a real JVM mid-write |
+| **Tests** | 115 automated tests (JUnit 5): domain unit tests, integration tests on real Postgres and Redis, concurrency tests, crash tests that kill a real JVM mid-write |
 | **Nightly diff** | 200,000 rows in **28.8 s** end to end (target < 60 s), file streamed, never held in memory ([results](backend/bench/RESULTS.md)) |
 | **Design** | [Design note](docs/design-note.md) (architecture, sequence diagram, failure-mode table) · [ADRs](docs/adr) |
 
@@ -40,6 +40,8 @@ Postgres, Redis, the web app, Prometheus and Grafana come up alongside. Host por
 | `operator@acme.test` | Sync operator | Dashboard, upload nightly files, approve/reject paused runs, test feed. Sees masked contact details |
 | `admin@acme.test` | Transport admin | Roster, edit pickup point and special assistance (HR can't) |
 | `employee@acme.test` | Employee (E1001) | Own profile and upcoming rides only |
+
+**Employees sign in with a one-time code, not a password.** Anyone the HR feed sent can open the **Employee** tab, enter the work email HR has for them (for example `aditya.gupta7@acme.example`), and sign in with a 6-digit code. No login accounts are created for employees: the HR record is the account, and an exit blocks sign-in. There is no email/SMS sender in this project, so locally the code is shown on screen (`SIGN_IN_CODE_SHOW=true` in `docker-compose.yml` only).
 | `operator@globex.test` | Operator, second client | Proves tenant isolation: sees none of Acme's data |
 
 HR system API keys (header `x-api-key`): `acme-hr-dev-key`, `globex-hr-dev-key`.
@@ -66,7 +68,7 @@ HR system API keys (header `x-api-key`): `acme-hr-dev-key`, `globex-hr-dev-key`.
 
 | Area | What's there |
 | --- | --- |
-| **Auth & tenant isolation** | Spring Security, stateless: JWT (jjwt, HS256) for people, SHA-256-hashed API keys for HR systems. Roles `EMPLOYEE` / `ADMIN` / `OPERATOR` / `HR_SYSTEM` in one table (`AccessPolicy`), enforced with `@PreAuthorize("@access.allows('…')")`. The tenant always comes from the credential, never from the request, and every query filters by `tenant_id` ([ADR 005](docs/adr/005-tenant-isolation.md)) |
+| **Auth & tenant isolation** | Spring Security, stateless: JWT (jjwt, HS256) for people, SHA-256-hashed API keys for HR systems. Staff sign in with a password (BCrypt); employees with a one-time code for the email HR sent (stored as an HMAC, expires in 5 minutes, 5 attempts, single use), so every employee the feed creates can sign in and every leaver is blocked. Roles `EMPLOYEE` / `ADMIN` / `OPERATOR` / `HR_SYSTEM` in one table (`AccessPolicy`), enforced with `@PreAuthorize("@access.allows('…')")`. The tenant always comes from the credential, never from the request, and every query filters by `tenant_id` ([ADR 005](docs/adr/005-tenant-isolation.md)) |
 | **Cost estimation** | [Complexity and limits](#complexity-and-where-it-stops-scaling) and [benchmarks](backend/bench/RESULTS.md) |
 | **Failure handling** | Crash-safe outbox, leased and resumable nightly runs, retries with backoff for transient DB errors (`Retry`), broker-outage mode, dead letters, consumer reclaim, abandoned-upload sweeper. [Failure-mode table](docs/design-note.md#4-failure-modes) |
 | **OOP & layering** | Controllers → services → repositories. Plain-Java domain: `Employee` aggregate with private state, sealed `EventHandler` hierarchy picked polymorphically by event type, `AppException` hierarchy, `EventPublisher` interface (Redis / in-memory / flaky). Constructor injection only ([ADR 001](docs/adr/001-java-and-spring-boot.md)) |
@@ -99,7 +101,7 @@ HR system API keys (header `x-api-key`): `acme-hr-dev-key`, `globex-hr-dev-key`.
    docker compose logs backend | grep -E '"outcome":"(CANCELLED|DUPLICATE)"'
    ```
    One `CANCELLED` and several `DUPLICATE`s: the exit reached the booking side several times, but rides were cancelled and seats freed exactly once.
-8. Sign in as **Rahul (admin)** and edit a pickup point. As **Ananya (employee)**, see your own rides. As **Vikram (Globex)**, see none of Acme's data.
+8. Sign in as **Rahul (admin)** and edit a pickup point. On the **Employee** tab, sign in as any employee HR sent (for example `aditya.gupta7@acme.example`) with the one-time code and see only your own rides. As **Vikram (Globex)**, see none of Acme's data.
 9. Open Grafana (http://localhost:3001) to see the on-call dashboard.
 
 ### Sample API calls
@@ -129,6 +131,7 @@ A Postman collection with every endpoint is in [`postman/RosterSync.postman_coll
 | Method | Path | Who |
 | --- | --- | --- |
 | POST | `/v1/auth/login` | anyone (rate-limited) |
+| POST | `/v1/auth/sign-in-code` (`{email}`), `/v1/auth/sign-in-code/verify` (`{email, code}`) | employees (rate-limited) |
 | GET | `/v1/auth/me` | any signed-in user |
 | POST | `/v1/events` | HR system, operator |
 | POST | `/v1/reconcile/runs` (body `text/csv`) | HR system, operator |
@@ -175,6 +178,8 @@ docker run --rm --network rostersync_default -v "$PWD/backend":/app -v rostersyn
 | `CrashIT` | A child JVM halted with exit 137 (a) between employee write and outbox write, (b) between publish and mark-sent, (c) mid-apply of a nightly run, then resumed by a healthy runner |
 | `RedisOutageIT` | Redis unreachable: writes and reads still work, cache errors counted |
 | `LogRedactionIT` | Runs every flow with debug logging and asserts names, emails, phones, addresses and passwords never appear |
+| `SignInCodeIT` | An employee the HR feed sent signs in with a code and sees only their own data; wrong, reused, expired and superseded codes refused; 5 wrong attempts burn a code; leavers blocked; unknown and shared emails get no code; only a hash is stored |
+| `TimeZoneIT` | "Today" in SQL is India's date even when the JVM runs in UTC, so "future bookings" are right after midnight |
 
 CI (`.github/workflows/ci.yml`) runs `mvn verify` against Postgres and Redis service containers, and builds the frontend.
 
@@ -252,7 +257,8 @@ Writes never read from the cache: version checks always lock the row in Postgres
 
 ### Deliberately left out
 - Kafka, CDC (Debezium), Kubernetes manifests: not needed at this scale.
-- SSO/OIDC: JWT + BCrypt shows the role model; production would sit behind the client's IdP.
+- SSO/OIDC and a real email/SMS sender: staff use a password and employees a one-time code; production would sit behind the client's IdP and deliver codes by email or SMS.
+- Self-service sign-up: roles are granted, never chosen. Staff accounts are created when a client is onboarded, HR API keys are issued (only their hash is stored), and employees need no account at all.
 - Re-planning cab routes when an employee's shift or office changes: change events are published for that service, but routing is out of scope. Existing bookings keep their original trip.
 - Partial-update events and field-level merge (see "Snapshots over patches").
 - Per-tenant safety-brake thresholds: one configurable global threshold; each run records the threshold it used.

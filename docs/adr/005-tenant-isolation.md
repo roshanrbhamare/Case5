@@ -10,7 +10,7 @@
 **Left out on purpose:** Postgres row-level security as a second wall. It needs a separate restricted database role, a per-transaction session setting and owner-privileged functions for cross-tenant worker jobs. That is a lot of moving parts for this scope; it is the next step if a stricter guarantee is required.
 
 **Roles:**
-- `EMPLOYEE`: own profile and rides.
+- `EMPLOYEE`: own profile and rides. Signs in with a one-time code for the email HR sent, so the HR record is the account and an exit blocks sign-in.
 - `ADMIN` (transport admin): reads the roster and edits transport fields.
 - `OPERATOR` (sync operator): uploads files, approves or rejects blocked runs, uses the test feed; sees masked contact details.
 - `HR_SYSTEM` (API key): sends events and files only.
