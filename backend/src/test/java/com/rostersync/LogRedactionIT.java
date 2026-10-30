@@ -56,6 +56,11 @@ class LogRedactionIT {
                         Fixtures.event("CREATE", "E4002", 1, badPhone),
                         Fixtures.event("UPDATE", "E4001", 2, withPickup))))));
 
+        String requested = mvc.perform(post("/v1/auth/sign-in-code").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"zara.khan@acme.example\"}")).andReturn().getResponse().getContentAsString();
+        mvc.perform(post("/v1/auth/sign-in-code/verify").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"zara.khan@acme.example\",\"code\":\"" + json.readTree(requested).get("demoCode").asText() + "\"}"));
+
         mvc.perform(get("/v1/employees").param("search", "Zara Khan").header("Authorization", admin));
         JsonNode current = json.readTree(mvc.perform(get("/v1/employees/E1001").header("Authorization", admin)).andReturn().getResponse().getContentAsString());
         mvc.perform(patch("/v1/employees/E1001/transport").header("Authorization", admin).contentType(MediaType.APPLICATION_JSON)
