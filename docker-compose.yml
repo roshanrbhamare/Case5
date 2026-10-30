@@ -32,6 +32,42 @@ services:
       timeout: 3s
       retries: 20
 
+  # Spring Boot: Flyway migrates on startup, then the API serves on 3000 and the background
+  # loops (outbox relay, booking consumer, nightly runner) run in the same process.
+  backend:
+    build: ./backend
+    environment:
+      # Defaults point at the containers above; set these in .env to use another Postgres or Redis.
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/rostersync}
+      DATABASE_USER: ${DATABASE_USER:-rostersync}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-rostersync}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-me-32-chars-min}
+      CORS_ORIGIN: http://localhost:8088,http://localhost:5173
+      SAFETY_BRAKE_THRESHOLD: ${SAFETY_BRAKE_THRESHOLD:-0.30}
+      SEED_DEMO_DATA: "true"
+      # Local demo only: lets `CHAOS_CRASH_AT=... docker compose up -d backend` inject a crash.
+      ALLOW_CHAOS: "true"
+      CHAOS_CRASH_AT: ${CHAOS_CRASH_AT:-}
+    ports: ["3000:3000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health/ready || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    ports: ["8088:80"]
+    depends_on:
+      backend: { condition: service_healthy }
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
