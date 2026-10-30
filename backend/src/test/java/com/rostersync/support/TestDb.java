@@ -17,7 +17,7 @@ public final class TestDb {
     private static final JdbcTemplate ADMIN = new JdbcTemplate(new SingleConnectionDataSource(URL, "rostersync", "rostersync", true));
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder(4);
     private static final String TABLES = "ingest_errors, ingest_batches, reconcile_staging, reconcile_runs, bookings, trips, "
-            + "outbox, dead_letter, consumed_events, employees, users, offices, tenants";
+            + "outbox, dead_letter, consumed_events, sign_in_codes, employees, users, offices, tenants";
 
     static {
         // Same session zone as the app (see application.yml), so seeded ride dates agree with it.

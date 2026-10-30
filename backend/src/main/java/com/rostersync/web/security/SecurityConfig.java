@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .requestCache(cache -> cache.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/v1/auth/login", "/health/**", "/metrics", "/error").permitAll()
+                        .requestMatchers("/v1/auth/login", "/v1/auth/sign-in-code", "/v1/auth/sign-in-code/verify", "/health/**", "/metrics", "/error").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(new ApiAuthenticationFilter(auth, errors), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(handling -> handling

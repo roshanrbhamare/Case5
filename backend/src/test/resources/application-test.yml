@@ -18,6 +18,8 @@ rostersync:
   worker:
     enabled: false
   login-attempts-per-minute: 1000
+  sign-in-code:
+    show-in-response: true
   jwt-secret: test-secret-test-secret-test-secret-32
   cors-origins: http://localhost
   stream:

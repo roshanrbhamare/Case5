@@ -100,6 +100,13 @@ rostersync:
     employee-ttl: ${CACHE_EMPLOYEE_TTL:60s}
     offices-ttl: ${CACHE_OFFICES_TTL:300s}
     api-key-ttl: ${CACHE_API_KEY_TTL:300s}
+  sign-in-code:
+    # Employees sign in with a one-time code for the email HR sent us.
+    ttl: ${SIGN_IN_CODE_TTL:5m}
+    max-attempts: ${SIGN_IN_CODE_MAX_ATTEMPTS:5}
+    # There is no email/SMS sender in this project: locally the code is returned in the API
+    # response instead. Never enable this in a real deployment.
+    show-in-response: ${SIGN_IN_CODE_SHOW:false}
   chaos:
     # Failure injection for tests and demos. Ignored unless allowed (never in real deployments).
     crash-at: ${CHAOS_CRASH_AT:}

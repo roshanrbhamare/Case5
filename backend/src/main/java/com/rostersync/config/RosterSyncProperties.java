@@ -24,6 +24,7 @@ public record RosterSyncProperties(
         Outbox outbox,
         Stream stream,
         Cache cache,
+        SignInCode signInCode,
         Chaos chaos) {
 
     public record Reconcile(@Min(1) int bucketGroup, @Min(1) int maxUploadMb, @Min(10) int leaseSeconds, @Min(10) long pollMs) {}
@@ -33,6 +34,9 @@ public record RosterSyncProperties(
     public record Stream(@NotBlank String name, @Min(1000) long maxLength, @NotBlank String consumerGroup, @Min(10) long reclaimMs) {}
 
     public record Cache(Duration employeeTtl, Duration officesTtl, Duration apiKeyTtl) {}
+
+    /** Employee sign-in codes. {@code showInResponse} stands in for an email/SMS sender in local demos only. */
+    public record SignInCode(Duration ttl, @Min(1) int maxAttempts, boolean showInResponse) {}
 
     public record Chaos(String crashAt, boolean allowed) {}
 }

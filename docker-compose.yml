@@ -48,6 +48,8 @@ services:
       SEED_DEMO_DATA: "true"
       # Local demo only: lets `CHAOS_CRASH_AT=... docker compose up -d backend` inject a crash.
       ALLOW_CHAOS: "true"
+      # Local demo only: no email/SMS sender, so employee sign-in codes are shown on screen.
+      SIGN_IN_CODE_SHOW: "true"
       CHAOS_CRASH_AT: ${CHAOS_CRASH_AT:-}
     ports: ["3000:3000"]
     depends_on:

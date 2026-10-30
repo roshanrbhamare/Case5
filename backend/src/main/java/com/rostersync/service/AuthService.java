@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Locale;
-import java.util.UUID;
 import javax.crypto.SecretKey;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,7 +28,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-    public record LoginUser(UUID id, String displayName, String role, String tenantId, String tenantName, String employeeId) {}
+    /** {@code id} is the user id for password logins and {@code employee:<id>} for code sign-ins. */
+    public record LoginUser(String id, String displayName, String role, String tenantId, String tenantName, String employeeId) {}
 
     public record LoginResult(String token, LoginUser user) {}
 
@@ -56,10 +56,21 @@ public class AuthService {
         User user = directory.userByEmail(email.trim().toLowerCase(Locale.ROOT)).orElse(null);
         boolean valid = passwords.matches(password, user == null ? dummyHash : user.passwordHash());
         if (user == null || !valid) throw new UnauthenticatedException("Email or password is incorrect.");
+        return issue(new LoginUser(user.id().toString(), user.displayName(), user.role(), user.tenantId(), null, user.employeeId()));
+    }
 
+    /**
+     * Employees sign in with a one-time code (see SignInCodeService) instead of a password: the
+     * HR record is the account, so nobody has to create logins for the people HR sends.
+     */
+    public LoginResult employeeSignIn(String tenantId, String employeeId, String displayName) {
+        return issue(new LoginUser("employee:" + employeeId, displayName, Role.EMPLOYEE.name(), tenantId, null, employeeId));
+    }
+
+    private LoginResult issue(LoginUser user) {
         Instant now = Instant.now();
         var builder = Jwts.builder()
-                .subject(user.id().toString())
+                .subject(user.id())
                 .issuer(ISSUER)
                 .claim("tid", user.tenantId())
                 .claim("role", user.role())

@@ -81,4 +81,8 @@ public class RosterMetrics {
     public void cache(String cache, String result) {
         Counter.builder("rostersync.cache.requests").tags("cache", cache, "result", result).register(registry).increment();
     }
+
+    public void signInCode(String result) {
+        Counter.builder("rostersync.sign.in.codes").description("Employee sign-in codes, by result").tag("result", result).register(registry).increment();
+    }
 }
