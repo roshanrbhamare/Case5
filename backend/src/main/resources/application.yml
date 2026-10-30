@@ -12,6 +12,10 @@ spring:
     hikari:
       pool-name: rostersync
       maximum-pool-size: ${DB_POOL_MAX:20}
+      # Ride dates are India calendar dates. The JDBC driver would otherwise set each session to
+      # the JVM's zone (UTC in a container), and between midnight and 05:30 IST "today" in SQL
+      # would still be yesterday.
+      connection-init-sql: SET TIME ZONE 'Asia/Kolkata'
       data-source-properties:
         # Constraint-violation details can echo row values (emails, phones): keep them out of exception messages and logs.
         logServerErrorDetail: false

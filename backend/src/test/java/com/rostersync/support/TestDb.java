@@ -19,6 +19,11 @@ public final class TestDb {
     private static final String TABLES = "ingest_errors, ingest_batches, reconcile_staging, reconcile_runs, bookings, trips, "
             + "outbox, dead_letter, consumed_events, employees, users, offices, tenants";
 
+    static {
+        // Same session zone as the app (see application.yml), so seeded ride dates agree with it.
+        ADMIN.execute("SET TIME ZONE 'Asia/Kolkata'");
+    }
+
     private TestDb() {}
 
     /** Fresh database with tenants, offices and users; optionally employees with three days of bookings. */
