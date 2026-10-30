@@ -14,7 +14,7 @@
 **Alternatives rejected:**
 - *Sort-merge of two sorted streams in the application:* needs the file sorted by id, which a real export isn't.
 - *Loading both sides into a hash map:* about 200k objects per side; memory grows with the client.
-- *Per-record apply only:* an early version did this; at about 6 round trips per row it took 28 s for 4,000 changes. Set-based statements cut that to about 6 s.
-- *One COPY message per row:* 200k tiny socket writes; buffering into 256 KB chunks made staging about 5× faster.
+- *Per-record apply only:* about 6 round trips per changed row, which dominates the run once thousands of rows change. Set-based statements do the same work in a few statements per bucket group (6.9 s for 3,990 changes in the benchmark).
+- *One COPY message per row:* 200k tiny socket writes; buffering into 256 KB chunks turns them into a small number of large writes.
 
 **Trade-off:** set-based apply duplicates a little logic in SQL (changed-field detection, event payload shape). Integration tests compare the events produced by both paths so they can't drift silently.

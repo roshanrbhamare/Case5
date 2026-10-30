@@ -77,7 +77,7 @@ HR system API keys (header `x-api-key`): `acme-hr-dev-key`, `globex-hr-dev-key`.
 
 ---
 
-## Walkthrough (also the demo-video script)
+## Walkthrough
 
 1. `docker compose up --build`, open http://localhost:8088 and sign in as **Meera (operator)**.
 2. **Test feed → Out-of-order delivery → Send.** v1 and v7 are applied; v6 comes back *Stale, ignored*.
@@ -158,7 +158,7 @@ docker compose up -d postgres redis
 cd backend && mvn test
 ```
 
-With no Java installed, run Maven in Docker on the compose network:
+Or run Maven in Docker on the compose network, with nothing to install locally:
 
 ```bash
 docker run --rm --network rostersync_default -v "$PWD/backend":/app -v rostersync-m2:/root/.m2 -w /app -e TEST_DB_URL=jdbc:postgresql://postgres:5432/rostersync_test -e TEST_REDIS_URL=redis://redis:6379/15 maven:3.9.9-eclipse-temurin-21 mvn -B test

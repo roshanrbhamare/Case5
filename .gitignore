@@ -43,7 +43,3 @@ out/
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# AI assistant and personal notes
-.claude/
-CLAUDE.md
