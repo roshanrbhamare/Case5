@@ -22,6 +22,26 @@ export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
 }
 
+/**
+ * One readiness probe: 'ready' (backend and database up), 'starting' (backend answered but
+ * isn't ready yet) or 'unreachable' (no answer within the timeout, e.g. a host waking from sleep).
+ */
+export async function serverStatus(timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(BASE + '/health/ready', { signal: controller.signal, cache: 'no-store' });
+    if (res.ok) return 'ready';
+    // A hosting proxy's own error page while the app boots isn't the backend answering.
+    const body = await res.json().catch(() => null);
+    return body?.status === 'not_ready' ? 'starting' : 'unreachable';
+  } catch {
+    return 'unreachable';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function api(path, { method = 'GET', body, headers = {}, raw } = {}) {
   let res;
   try {

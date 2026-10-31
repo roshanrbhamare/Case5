@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App.jsx';
 import { AuthProvider } from './auth.jsx';
+import { ServerGate } from './components/ServerGate.jsx';
 import { ToastProvider } from './components/ui.jsx';
 import './styles.css';
 
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AuthProvider>
           <ToastProvider>
-            <App />
+            <ServerGate>
+              <App />
+            </ServerGate>
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
