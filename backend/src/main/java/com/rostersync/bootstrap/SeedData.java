@@ -40,7 +40,10 @@ public final class SeedData {
             new UserSeed("acme", "admin@acme.test", "Rahul Menon", "ADMIN", null),
             new UserSeed("acme", "employee@acme.test", "Ananya Sharma", "EMPLOYEE", "E1001"),
             new UserSeed("globex", "operator@globex.test", "Vikram Singh", "OPERATOR", null),
-            new UserSeed("globex", "admin@globex.test", "Priya Nair", "ADMIN", null));
+            new UserSeed("acme", "employee2@acme.test", "Priya Mehta", "EMPLOYEE", "E1002"),
+            new UserSeed("globex", "admin@globex.test", "Priya Nair", "ADMIN", null),
+            new UserSeed("globex", "employee@globex.test", "Arjun Patel", "EMPLOYEE", "G1003"),
+            new UserSeed("globex", "employee2@globex.test", "Kavya Bose", "EMPLOYEE", "G1004"));
 
     private static final String[] FIRST = {"Ananya", "Rohan", "Priya", "Arjun", "Kavya", "Vikram", "Isha", "Aditya", "Neha", "Karan", "Sneha",
             "Rahul", "Divya", "Siddharth", "Pooja", "Manish", "Aisha", "Varun", "Lakshmi", "Nikhil"};

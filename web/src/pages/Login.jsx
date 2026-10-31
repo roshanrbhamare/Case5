@@ -7,9 +7,13 @@ import { BrandMark } from '../components/Layout.jsx';
 // Development-only demo accounts created by the seed script.
 const DEMO = [
   { email: 'operator@acme.test', name: 'Meera Iyer', role: 'Sync operator · Acme' },
-  { email: 'admin@acme.test', name: 'Rahul Menon', role: 'Transport admin · Acme' },
-  { email: 'employee@acme.test', name: 'Ananya Sharma', role: 'Employee · Acme' },
   { email: 'operator@globex.test', name: 'Vikram Singh', role: 'Sync operator · Globex' },
+  { email: 'admin@acme.test', name: 'Rahul Menon', role: 'Transport admin · Acme' },
+  { email: 'admin@globex.test', name: 'Priya Nair', role: 'Transport admin · Globex' },
+  { email: 'employee@acme.test', name: 'Ananya Sharma', role: 'Employee · Acme' },
+  { email: 'employee2@acme.test', name: 'Priya Mehta', role: 'Employee · Acme' },
+  { email: 'employee@globex.test', name: 'Arjun Patel', role: 'Employee · Globex' },
+  { email: 'employee2@globex.test', name: 'Kavya Bose', role: 'Employee · Globex' },
 ];
 const DEMO_PASSWORD = 'Demo@1234';
 // An employee the seeded HR feed created; any active employee's email works.
