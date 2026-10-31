@@ -39,14 +39,37 @@ Postgres, Redis, the web app, Prometheus and Grafana come up alongside. Host por
 | --- | --- | --- |
 | `operator@acme.test` | Sync operator | Dashboard, upload nightly files, approve/reject paused runs, test feed. Sees masked contact details |
 | `admin@acme.test` | Transport admin | Roster, edit pickup point and special assistance (HR can't) |
-| `employee@acme.test` | Employee (E1001) | Own profile and upcoming rides only |
+| `employee@acme.test`, `employee2@acme.test` | Employee (E1001, E1002) | Own profile and upcoming rides only |
+| `operator@globex.test` | Sync operator, second client | Proves tenant isolation: sees none of Acme's data |
+| `admin@globex.test` | Transport admin, second client | Globex roster only |
+| `employee@globex.test`, `employee2@globex.test` | Employee (G1003, G1004) | Own profile and upcoming rides only |
 
 **Employees sign in with a one-time code, not a password.** Anyone the HR feed sent can open the **Employee** tab, enter the work email HR has for them (for example `aditya.gupta7@acme.example`), and sign in with a 6-digit code. No login accounts are created for employees: the HR record is the account, and an exit blocks sign-in. There is no email/SMS sender in this project, so locally the code is shown on screen (`SIGN_IN_CODE_SHOW=true` in `docker-compose.yml` only).
-| `operator@globex.test` | Operator, second client | Proves tenant isolation: sees none of Acme's data |
 
 HR system API keys (header `x-api-key`): `acme-hr-dev-key`, `globex-hr-dev-key`.
 
 **Using your own Postgres or Redis.** Copy [`.env.example`](.env.example) to `.env` and set `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD` and/or `REDIS_URL`. Docker Compose reads `.env` automatically, and anything left unset uses the local containers. `.env` is git-ignored, so credentials stay out of the repository. Outside Docker, the same names are read as environment variables (see `backend/src/main/resources/application.yml`).
+
+---
+
+## Deploy (Render + Vercel, hosted Postgres and Redis)
+
+```
+Browser ──> Vercel (web/, static React build)
+   └──── API calls ──> Render (backend/, Docker) ──> hosted Postgres (e.g. Neon)
+                                                └──> hosted Redis (e.g. Upstash, Redis Cloud)
+```
+
+1. **Postgres.** Create a database named `rostersync`. Use the direct connection, not a pooler endpoint (Flyway needs a session). Flyway creates the tables on first start.
+2. **Redis.** Any Redis 6.2+ with Streams and consumer groups. Use the `rediss://` (TLS) URL.
+3. **Backend on Render.** *New → Blueprint* on this repository picks up [`render.yaml`](render.yaml): a Docker service from `backend/`, health check `/health/ready`, and `JWT_SECRET` generated. Render then asks for:
+   - `DATABASE_URL` (`jdbc:postgresql://<host>/rostersync?sslmode=require`), `DATABASE_USER`, `DATABASE_PASSWORD`
+   - `REDIS_URL`
+   - `CORS_ORIGIN`: the Vercel URL, e.g. `https://rostersync.vercel.app`
+4. **Web on Vercel.** Import the repository with root directory `web` ([`web/vercel.json`](web/vercel.json) sets the Vite build and the single-page fallback). Add the environment variable `VITE_API_URL` = the Render URL, e.g. `https://rostersync-backend.onrender.com`, then deploy. The browser calls the backend directly, so nightly-file uploads are not limited by Vercel's request size.
+5. **Check.** `https://<backend>/health/ready` responds, then sign in on the Vercel URL as `operator@acme.test`.
+
+The blueprint seeds the demo tenants and shows employee sign-in codes on screen (`SEED_DEMO_DATA`, `SIGN_IN_CODE_SHOW`), since there is no email or SMS sender. Turn both off for real data. On Render's free plan the service sleeps when idle, which also pauses the background loops; a paid instance keeps them running. `/metrics` is public, so restrict it when Prometheus is not on a private network.
 
 ---
 

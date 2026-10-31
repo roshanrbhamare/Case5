@@ -1,0 +1,41 @@
+# Render Blueprint for the backend (New → Blueprint → this repository).
+# Postgres and Redis are external (e.g. Neon and Upstash): Render asks for the values marked sync: false.
+# The web app is deployed separately on Vercel (web/vercel.json).
+services:
+  - type: web
+    name: rostersync-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health/ready
+    envVars:
+      # jdbc:postgresql://<host>/rostersync?sslmode=require (use the direct endpoint, not the pooler: Flyway needs a session)
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      # rediss://default:<password>@<host>:6379
+      - key: REDIS_URL
+        sync: false
+      # The Vercel URL, e.g. https://rostersync.vercel.app (comma-separated for several)
+      - key: CORS_ORIGIN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      # Hosted databases allow few connections.
+      - key: DB_POOL_MAX
+        value: "5"
+      # Slower polling keeps hosted Redis/Postgres request counts low.
+      - key: OUTBOX_POLL_MS
+        value: "2000"
+      - key: RECONCILE_POLL_MS
+        value: "2000"
+      # Demo tenants, users and employees on an empty database.
+      - key: SEED_DEMO_DATA
+        value: "true"
+      # No email/SMS sender: employee sign-in codes are shown on screen. Demo deployments only.
+      - key: SIGN_IN_CODE_SHOW
+        value: "true"

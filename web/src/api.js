@@ -1,4 +1,6 @@
-const BASE = '/api';
+// Same-origin '/api' behind nginx or the Vite proxy. A hosted build (e.g. Vercel) sets
+// VITE_API_URL to the backend's own URL, so large uploads skip the host's proxy limits.
+const BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
 let token = null;
 let onUnauthorized = () => {};
 
